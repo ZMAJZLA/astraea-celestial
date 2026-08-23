@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTRAEA: CELESTIAL</title>
+    <style>
+        body {
+            background-color: #080808; color: #f0f0f0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; margin: 0; user-select: none; overflow: hidden;
+        }
+
+        h1 { color: #f1c40f; margin: 10px 0; letter-spacing: 4px; text-shadow: 2px 2px #000; }
+
+        .hud {
+            display: flex; justify-content: space-between; width: 680px;
+            background: #1a1a1a; padding: 10px 20px; box-sizing: border-box;
+            border: 4px solid #d4af37; border-bottom: none; font-size: 14px; font-weight: bold;
+            box-shadow: inset 0 0 10px #000;
+        }
+
+        .game-wrapper {
+            display: flex; align-items: flex-start; gap: 20px; background: #0a0a0a;
+            padding: 10px; border: 4px solid #d4af37; position: relative;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+
+        canvas { background-color: #1e140d; image-rendering: pixelated; outline: none; border: 2px solid #000; }
+
+        .right-controls { display: flex; flex-direction: column; align-items: center; gap: 15px; width: 160px; }
+
+        .panel {
+            background: #0d0d0d; border: 2px solid #d4af37; padding: 10px;
+            width: 100%; box-sizing: border-box; font-size: 12px; border-radius: 4px;
+            box-shadow: inset 0 0 8px #000;
+        }
+        .panel h3 { margin: 0 0 10px 0; font-size: 13px; color: #f1c40f; text-align: center; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .eq-slot { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #ddd; }
+
+        .minimap-container { display: flex; justify-content: center; align-items: center; background: #000; border: 1px solid #333; padding: 5px; border-radius: 4px;}
+        #miniCanvas { background: #111; image-rendering: pixelated; }
+
+        .action-btns { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px;}
+        .action-btns button {
+            width: 100%; height: 42px; color: #fff; border: 2px solid #fff;
+            font-weight: bold; font-size: 14px; cursor: pointer; border-radius: 6px;
+            transition: transform 0.1s;
+        }
+        .action-btns button:active { transform: scale(0.95); }
+        #btnAttack { background: #e63946; } #btnBomb { background: #d35400; }
+
+        .sys-bar { margin-top: 15px; display: flex; gap: 12px; }
+        .sys-btn {
+            background: #222; color: #fff; border: 2px solid #d4af37;
+            padding: 8px 14px; font-family: inherit; font-size: 13px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .sys-btn:hover { background: #d4af37; color: #000; }
+
+        /* Overlays */
+        .overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 5, 5, 0.95); border: 4px solid #d4af37; z-index: 20;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: #fff; text-align: center; box-sizing: border-box; padding: 20px;
+        }
+        .overlay h2 { font-size: 24px; color: #f1c40f; margin-bottom: 12px; text-shadow: 2px 2px #000; }
+        .overlay p { font-size: 13px; margin-bottom: 10px; color: #ddd; line-height: 1.5; }
+        .overlay button { margin-top: 12px; background: #d4af37; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; color: #000; }
+
+        #welcomeModal { display: none; z-index: 40; }
+        #welcomeModal ul { font-size: 13px; color: #2ecc71; text-align: left; margin-bottom: 15px; padding-left: 20px; line-height: 1.5;}
+        #welcomeModal li { margin-bottom: 6px; }
+
+        .cheat-btn-group { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+        .cheat-toggle { background: #d35400; color: #fff; border: 1px solid #fff; padding: 6px 12px; font-size: 11px; cursor: pointer; }
+
+        #achievementToast {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #f39c12, #d35400); border: 2px solid #fff; color: #fff;
+            padding: 10px 20px; font-weight: bold; border-radius: 8px; z-index: 50;
+            display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); text-shadow: 1px 1px #000;
+        }
+
+        #creditsOverlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #050505; overflow: hidden; z-index: 30; flex-direction: column; align-items: center;
+        }
+
+        .credits-content {
+            position: absolute; width: 100%; text-align: center; color: #f1c40f;
+            animation: scrollUp 22s linear forwards;
+        }
+        .credits-content h2 { font-size: 28px; color: #2ecc71; margin-bottom: 15px; }
+        .credits-content h3 { font-size: 16px; color: #e63946; margin-top: 20px; margin-bottom: 4px; }
+        .credits-content p { font-size: 13px; color: #fff; margin: 3px 0; }
+
+        @keyframes scrollUp { 0% { top: 100%; } 100% { top: -140%; } }
+        #restartBtn { position: absolute; bottom: 20px; z-index: 35; display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>ASTRAEA: CELESTIAL</h1>
+
+    <div class="hud">
+        <div id="hpDisplay">HP: ❤️❤️❤️</div>
+        <div id="roomDisplay">ZONE: Overworld</div>
+        <div id="rupeeDisplay">💎 0 | 🔷 0/3 | 🔑 0 | 💣 5</div>
+    </div>
+
+    <div class="game-wrapper">
+        <canvas id="gameCanvas" width="512" height="448"></canvas>
+
+        <div id="achievementToast">🏆 ACHIEVEMENT UNLOCKED!</div>
+
+        <div id="welcomeModal" class="overlay">
+            <h2>⚔️ Welcome to ASTRAEA: CELESTIAL ⚔️</h2>
+            <p>Conquer the 3 elemental dungeons, defeat the Mini-Bosses for Keys, and gather the Celestial Shards!</p>
+            <ul>
+                <li><strong>Controls:</strong> WASD / Arrows = Move | [E] / [Space] = Interact & Sword | [Q] = Bomb</li>
+                <li><strong>Progression:</strong> Gather 3 Shards to break the Overworld barrier to the Main Dungeon.</li>
+                <li><strong>The Main Dungeon:</strong> Defeat its guardian to claim the <strong>Aegis Shield</strong> required to beat the final boss!</li>
+                <li><strong>Combat:</strong> STAND STILL to block. Look for glowing yellow-cracked walls!</li>
+            </ul>
+            <button class="sys-btn" onclick="closeWelcomeModal()">Enter Realm [E]</button>
+        </div>
+
+        <div id="signModal" class="overlay">
+            <div id="signText">Sign content...</div>
+            <button onclick="closeSign()">Continue [E]</button>
+        </div>
+
+        <div id="upgradeModal" class="overlay">
+            <h2 id="upgradeTitle">⚔️ ITEM FOUND! ⚔️</h2>
+            <p id="upgradeDesc">Description...</p>
+            <button class="sys-btn" onclick="closeUpgradeModal()">Continue [E]</button>
+        </div>
+
+        <div id="cheatModal" class="overlay">
+            <h2>📜 CHEATS & DEBUG MENU 📜</h2>
+            <div class="cheat-btn-group">
+                <button class="cheat-toggle" onclick="toggleGodMode()">Toggle God Mode</button>
+                <button class="cheat-toggle" onclick="giveInfBombsKeys()">Refill 99 Bombs & Keys</button>
+                <button class="cheat-toggle" onclick="giveAllShards()">Give 3 Shards</button>
+                <button class="cheat-toggle" onclick="warpToBoss()">Warp to Final Boss</button>
+            </div>
+            <button class="sys-btn" onclick="closeCheatModal()">Close Guide [C]</button>
+        </div>
+
+        <div id="gameOverOverlay" class="overlay">
+            <h2 style="color: #e63946; font-size: 32px;">💀 GAME OVER 💀</h2>
+            <p>You succumbed to the darkness...</p>
+            <button class="sys-btn" onclick="resetGame()">Try Again</button>
+        </div>
+
+        <div id="creditsOverlay" class="overlay" style="background: #050505;">
+            <div id="creditsText" style="position: absolute; width: 100%; text-align: center; top: 100%; color: #f1c40f;">
+                <h2 style="font-size: 28px; color: #2ecc71;">🏆 ASTRAEA RESTORED! 🏆</h2>
+                <p>The Final Boss has fallen! The Celestial Altar is restored!</p>
+                <br>
+                <h3 style="color: #e63946; margin-bottom: 2px;">DEVELOPED & CREATED BY</h3><p>ZMAJZLA (Jamie)</p>
+                <h3 style="color: #e63946; margin-bottom: 2px;">LEAD GAME PROGRAMMER</h3><p>ZMAJZLA (Jamie)</p>
+                <h3 style="color: #e63946; margin-bottom: 2px;">GAME DESIGN & COMBAT BALANCING</h3><p>ZMAJZLA (Jamie)</p>
+                <h3 style="color: #e63946; margin-bottom: 2px;">VECTOR ART & TEXTURE ENGINE</h3><p>ZMAJZLA (Jamie)</p>
+                <h3 style="color: #e63946; margin-bottom: 2px;">PROCEDURAL SOUND SYNTHESIS</h3><p>ZMAJZLA (Jamie)</p>
+                <br>
+                <h3 style="color: #3498db; margin-bottom: 2px;">--- ENGINE & ASSET CREDITS ---</h3>
+                <p style="font-size: 11px;"><strong>Architecture:</strong> Vanilla JavaScript (HTML5 Canvas 2D)</p>
+                <p style="font-size: 11px;"><strong>Graphics:</strong> Custom SVG Data URIs</p>
+                <p style="font-size: 11px;"><strong>Audio:</strong> Custom Procedural Web Audio API</p>
+                <p style="font-size: 11px;"><strong>Dependencies:</strong> 100% Self-Contained</p>
+                <br><br>
+                <p>--- THANK YOU FOR PLAYING ---</p>
+            </div>
+            <button id="restartBtn" class="sys-btn" onclick="resetGame()" style="position: absolute; bottom: 20px; display: none;">Play Again</button>
+        </div>
+
+        <div class="right-controls">
+            <div class="panel equipment-panel">
+                <h3>EQUIPMENT</h3>
+                <div class="eq-slot" id="eqSword">🗡️ Wooden Sword</div>
+                <div class="eq-slot" id="eqShield">🛡️ Wooden Shield</div>
+            </div>
+            
+            <div class="panel">
+                <h3>RADAR</h3>
+                <div class="minimap-container">
+                    <canvas id="miniCanvas" width="120" height="96"></canvas>
+                </div>
+            </div>
+
+            <div class="action-btns">
+                <button class="attack-btn" id="btnAttack">ACTION [E]</button>
+                <button class="bomb-btn" id="btnBomb">BOMB [Q]</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sys-bar">
+        <button class="sys-btn" onclick="saveProgress()">Save Game</button>
+        <button class="sys-btn" onclick="loadProgress()">Load Game</button>
+        <button class="sys-btn" onclick="openCheatModal()">Cheats Guide [C]</button>
+        <button class="sys-btn" onclick="resetGame()">Reset Save</button>
+    </div>
+
+    <script>
+        // --- Bulletproof Crash Logger ---
+        window.onerror = function(msg, url, line) {
+            const canvas = document.getElementById("gameCanvas");
+            if (canvas) {
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = "#e63946"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#fff"; ctx.font = "16px Courier New";
+                ctx.fillText("FATAL CRASH PREVENTED:", 20, 40);
+                ctx.fillText(msg, 20, 80);
+                ctx.fillText("Line: " + line, 20, 110);
+            }
+        };
+
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const miniCanvas = document.getElementById("miniCanvas");
+        const mCtx = miniCanvas.getContext("2d");
+        const TILE_SIZE = 32, ROWS = 14, COLS = 16;
+
+        // --- Safe Audio Synthesizer ---
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!AudioCtxClass) return; 
+            try {
+                if (!audioCtx) audioCtx = new AudioCtxClass();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e) {}
+        }
+
+        function playSound(type) {
+            initAudio(); 
+            if (!audioCtx || audioCtx.state !== 'running') return;
+            try {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+
+                if (type === 'swing') {
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+                    gain.gain.setValueAtTime(0.12, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now); osc.stop(now + 0.08);
+                } else if (type === 'hit') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(25, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now); osc.stop(now + 0.12);
+                } else if (type === 'block') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(700, now); osc.frequency.setValueAtTime(350, now + 0.06);
+                    gain.gain.setValueAtTime(0.25, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now); osc.stop(now + 0.08);
+                } else if (type === 'gem') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, now); osc.frequency.setValueAtTime(880, now + 0.08);
+                    gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                } else if (type === 'shard') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(554, now + 0.1); osc.frequency.setValueAtTime(659, now + 0.2); osc.frequency.setValueAtTime(880, now + 0.4);
+                    gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                    osc.start(now); osc.stop(now + 0.8);
+                } else if (type === 'warp') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(600, now + 0.4);
+                    gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now); osc.stop(now + 0.4);
+                } else if (type === 'chest') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(300, now); osc.frequency.setValueAtTime(400, now + 0.2); osc.frequency.setValueAtTime(600, now + 0.4);
+                    gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                    osc.start(now); osc.stop(now + 0.8);
+                }
+            } catch(e) {}
+        }
+
+        let musicOsc, musicGain, isMusicPlaying = false;
+        function playIntroMusic() {
+            initAudio(); if (!audioCtx || isMusicPlaying) return;
+            try {
+                isMusicPlaying = true;
+                musicOsc = audioCtx.createOscillator();
+                musicGain = audioCtx.createGain();
+                musicOsc.type = 'triangle';
+                musicOsc.connect(musicGain); musicGain.connect(audioCtx.destination);
+                
+                const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+                let startTime = audioCtx.currentTime;
+                
+                musicGain.gain.setValueAtTime(0.1, startTime);
+                for(let i=0; i<30; i++) {
+                    notes.forEach((freq, idx) => {
+                        musicOsc.frequency.setValueAtTime(freq, startTime + (i * 1.5) + (idx * 0.25));
+                    });
+                }
+                musicOsc.start(startTime);
+            } catch(e){}
+        }
+        function stopIntroMusic() {
+            if(musicOsc) { try { musicGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 1); setTimeout(()=>musicOsc.stop(), 1000); } catch(e){} }
+            isMusicPlaying = false;
+        }
+
+        // --- High-Quality Remastered SVG Textures ---
+        const sprites = {
+            playerDown: new Image(), playerUp: new Image(), playerLeft: new Image(), playerRight: new Image(),
+            enemy: new Image(), wizard: new Image(), slime: new Image(), stalfos: new Image(), boss: new Image(),
+            bat: new Image(), knight: new Image(), magicPellet: new Image(),
+            wallOverworld: new Image(), wallForest: new Image(), wallIce: new Image(), wallFire: new Image(), wallAltar: new Image(),
+            floorOverworld: new Image(), floorForest: new Image(), floorIce: new Image(), floorFire: new Image(), floorAltar: new Image(),
+            crackWall: new Image(), water: new Image(), lava: new Image(), iceFloor: new Image(),
+            spikes: new Image(), pit: new Image(), box: new Image(), keyDoor: new Image(), sign: new Image(), 
+            shrine: new Image(), altar: new Image(), barrier: new Image(), heart: new Image(), shard: new Image(), 
+            shield: new Image(), aegisShield: new Image(), bomb: new Image(), bombPickup: new Image(), 
+            explosion: new Image(), masterSword: new Image(), entrance: new Image(), warpPad: new Image(),
+            chestGold: new Image(), chestBlue: new Image(), chestSilver: new Image(), chestOpen: new Image()
+        };
+
+        // Upgraded Player
+        sprites.playerDown.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 0h8v4H4z" fill="%23196f3d"/><path d="M3 4h10v3H3z" fill="%2327ae60"/><rect x="4" y="7" width="8" height="3" fill="%23f5b041"/><rect x="5" y="8" width="2" height="1" fill="%23111"/><rect x="9" y="8" width="2" height="1" fill="%23111"/><rect x="3" y="10" width="10" height="3" fill="%23229954"/><rect x="4" y="11" width="8" height="1" fill="%237e5109"/><rect x="4" y="13" width="3" height="3" fill="%235c4033"/><rect x="9" y="13" width="3" height="3" fill="%235c4033"/></svg>';
+        sprites.playerUp.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 0h8v6H4z" fill="%23196f3d"/><path d="M3 6h10v4H3z" fill="%2327ae60"/><rect x="4" y="10" width="8" height="3" fill="%23229954"/><rect x="4" y="11" width="8" height="1" fill="%237e5109"/><rect x="4" y="13" width="3" height="3" fill="%235c4033"/><rect x="9" y="13" width="3" height="3" fill="%235c4033"/></svg>';
+        sprites.playerLeft.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 0h7v4H4z" fill="%23196f3d"/><rect x="2" y="4" width="9" height="6" fill="%2327ae60"/><rect x="2" y="6" width="5" height="3" fill="%23f5b041"/><rect x="3" y="7" width="1" height="1" fill="%23111"/><rect x="11" y="5" width="2" height="7" fill="%23f1c40f"/><rect x="4" y="13" width="3" height="3" fill="%235c4033"/><rect x="8" y="13" width="3" height="3" fill="%235c4033"/></svg>';
+        sprites.playerRight.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M5 0h7v4H5z" fill="%23196f3d"/><rect x="5" y="4" width="9" height="6" fill="%2327ae60"/><rect x="9" y="6" width="5" height="3" fill="%23f5b041"/><rect x="12" y="7" width="1" height="1" fill="%23111"/><rect x="3" y="5" width="2" height="7" fill="%23f1c40f"/><rect x="5" y="13" width="3" height="3" fill="%235c4033"/><rect x="9" y="13" width="3" height="3" fill="%235c4033"/></svg>';
+
+        // Enemies
+        sprites.enemy.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23e74c3c"/><stop offset="100%" stop-color="%23922b21"/></linearGradient></defs><polygon points="1,2 4,6 1,6" fill="%23641e16"/><polygon points="15,2 15,6 12,6" fill="%23641e16"/><circle cx="8" cy="9" r="6" fill="url(%23eg)"/><circle cx="5" cy="8" r="1.5" fill="%23f1c40f"/><circle cx="11" cy="8" r="1.5" fill="%23f1c40f"/><rect x="13" y="7" width="2" height="8" fill="%237e5109"/></svg>';
+        sprites.wizard.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0 L3 15 L13 15 Z" fill="%234a235a"/><path d="M8 2 L5 8 L11 8 Z" fill="%2317202a"/><circle cx="8" cy="9" r="2" fill="%23e74c3c"/><rect x="12" y="1" width="2" height="14" fill="%237f8c8d"/><circle cx="13" cy="1" r="2" fill="%2300f2fe"/></svg>';
+        sprites.slime.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><radialGradient id="sl" cx="30%" cy="30%" r="70%"><stop offset="0%" stop-color="%2358d68d"/><stop offset="100%" stop-color="%231d8348"/></radialGradient></defs><path d="M1 14 C1 4, 15 4, 15 14 Z" fill="url(%23sl)"/><circle cx="6" cy="10" r="1.5" fill="%23fff"/><circle cx="10" cy="10" r="1.5" fill="%23fff"/><circle cx="6" cy="10" r="0.8" fill="%23000"/><circle cx="10" cy="10" r="0.8" fill="%23000"/></svg>';
+        sprites.stalfos.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="4" y="1" width="8" height="6" fill="%23ecf0f1" rx="2"/><rect x="5" y="3" width="2" height="2" fill="%23111"/><rect x="9" y="3" width="2" height="2" fill="%23111"/><rect x="7" y="6" width="2" height="1" fill="%23111"/><path d="M5 8 L11 8 L9 15 L7 15 Z" fill="%23bdc3c7"/><line x1="1" y1="8" x2="15" y2="8" stroke="%23c0392b" stroke-width="2"/></svg>';
+        sprites.boss.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" fill="%23154360" rx="3"/><path d="M1 1 L8 7 L15 1 Z" fill="%23922b21"/><circle cx="5" cy="7" r="2" fill="%23f1c40f"/><circle cx="11" cy="7" r="2" fill="%23f1c40f"/><circle cx="5" cy="7" r="1" fill="%23000"/><circle cx="11" cy="7" r="1" fill="%23000"/><path d="M4 12 L8 16 L12 12 Z" fill="%23111"/></svg>';
+        sprites.bat.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 4 L15 1 L12 7 L8 9 L4 7 L1 1 Z" fill="%234a235a"/><circle cx="6" cy="6" r="1" fill="%23e74c3c"/><circle cx="10" cy="6" r="1" fill="%23e74c3c"/></svg>';
+        sprites.knight.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="3" y="1" width="10" height="14" fill="%237f8c8d" rx="2"/><rect x="5" y="4" width="6" height="2" fill="%23111"/><rect x="7" y="4" width="2" height="5" fill="%23111"/><rect x="4" y="9" width="8" height="4" fill="%23bdc3c7"/></svg>';
+        sprites.magicPellet.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="%2300f2fe"/><circle cx="8" cy="8" r="3" fill="%23ffffff"/></svg>';
+
+        // Themed Floors
+        sprites.floorOverworld.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%231e8449"/><path d="M2 2l2 2M12 12l2 2M14 4l-2 2" stroke="%2327ae60" stroke-width="1" fill="none"/></svg>';
+        sprites.floorForest.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%233e2723"/><rect x="0" y="0" width="8" height="8" fill="%232c1d11"/><rect x="8" y="8" width="8" height="8" fill="%232c1d11"/><rect x="0" y="0" width="8" height="1" fill="%233a2717"/><rect x="8" y="8" width="8" height="1" fill="%233a2717"/><circle cx="4" cy="4" r="1.5" fill="%23196f3d"/><circle cx="12" cy="12" r="1" fill="%23196f3d"/></svg>';
+        sprites.floorIce.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%2385c1e9"/><line x1="2" y1="2" x2="6" y2="6" stroke="%23d6eaf8" stroke-width="1"/><line x1="10" y1="12" x2="14" y2="14" stroke="%23d6eaf8" stroke-width="1"/></svg>';
+        sprites.floorFire.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%2317202a"/><path d="M0 0h16v16H0z" fill="none" stroke="%232c3e50" stroke-width="0.5"/><path d="M2 2l3 3M12 10l-2 4" stroke="%23c0392b" stroke-width="1" fill="none"/></svg>';
+        sprites.floorAltar.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%234a235a"/><rect x="1" y="1" width="14" height="14" fill="none" stroke="%235b2c6f" stroke-width="1"/><rect x="4" y="4" width="8" height="8" fill="none" stroke="%23f1c40f" stroke-width="0.5" opacity="0.3"/></svg>';
+
+        // Themed Walls
+        sprites.wallOverworld.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23145a32"/><rect x="0" y="0" width="16" height="4" fill="%231e8449"/><rect x="1" y="5" width="6" height="4" fill="%23196f3d"/><rect x="9" y="5" width="6" height="4" fill="%23196f3d"/><rect x="1" y="11" width="14" height="4" fill="%23196f3d"/></svg>';
+        sprites.wallForest.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%231c2833"/><rect x="0" y="0" width="16" height="4" fill="%2334495e"/><rect x="0" y="0" width="16" height="1" fill="%235d6d7e"/><rect x="1" y="5" width="6" height="4" fill="%232c3e50"/><rect x="9" y="5" width="6" height="4" fill="%232c3e50"/><rect x="1" y="11" width="14" height="4" fill="%232c3e50"/><path d="M2 0 Q4 8 2 16" stroke="%2327ae60" fill="none" stroke-width="1"/></svg>';
+        sprites.wallIce.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%232980b9"/><rect x="0" y="0" width="16" height="4" fill="%235dade2"/><rect x="0" y="0" width="16" height="1" fill="%23a9cce3"/><rect x="1" y="5" width="6" height="4" fill="%233498db"/><rect x="9" y="5" width="6" height="4" fill="%233498db"/><rect x="1" y="11" width="14" height="4" fill="%233498db"/></svg>';
+        sprites.wallFire.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23641e16"/><rect x="0" y="0" width="16" height="4" fill="%23a93226"/><rect x="0" y="0" width="16" height="1" fill="%23cd6155"/><rect x="1" y="5" width="6" height="4" fill="%23922b21"/><rect x="9" y="5" width="6" height="4" fill="%23922b21"/><rect x="1" y="11" width="14" height="4" fill="%23922b21"/></svg>';
+        sprites.wallAltar.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23111"/><rect x="0" y="0" width="16" height="4" fill="%23f1c40f"/><rect x="0" y="0" width="16" height="1" fill="%23f9e79f"/><rect x="1" y="5" width="6" height="4" fill="%23222"/><rect x="9" y="5" width="6" height="4" fill="%23222"/><rect x="1" y="11" width="14" height="4" fill="%23222"/></svg>';
+
+        // Hazards
+        sprites.water.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%231f618d"/><path d="M2 4 Q 4 2, 6 4 T 10 4 M6 12 Q 8 10, 10 12 T 14 12" stroke="%235dade2" fill="none" stroke-width="1.5"/></svg>';
+        sprites.lava.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23e74c3c"/><path d="M2 4 Q 4 2, 6 4 T 10 4 M6 12 Q 8 10, 10 12 T 14 12" stroke="%23f1c40f" fill="none" stroke-width="1.5"><animate attributeName="opacity" values="0.5;1;0.5" dur="1s" repeatCount="indefinite"/></path></svg>';
+        sprites.spikes.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%2322160e"/><polygon points="2,14 4,4 6,14" fill="%2395a5a6"/><polygon points="6,14 8,4 10,14" fill="%23bdc3c7"/><polygon points="10,14 12,4 14,14" fill="%23ecf0f1"/></svg>';
+        sprites.pit.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%2322160e"/><rect x="1" y="1" width="14" height="14" fill="%230a0a0a" rx="2"/><rect x="3" y="3" width="10" height="10" fill="%23000"/></svg>';
+
+        // Chests & Items
+        sprites.box.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%2322160e"/><rect x="1" y="1" width="14" height="14" fill="%23ba4a00"/><rect x="2" y="2" width="12" height="12" fill="%23d35400"/><line x1="2" y1="2" x2="14" y2="14" stroke="%237e5109" stroke-width="1"/><line x1="14" y1="2" x2="2" y2="14" stroke="%237e5109" stroke-width="1"/><rect x="0" y="0" width="16" height="16" fill="none" stroke="%23111" stroke-width="1"/></svg>';
+        sprites.chestGold.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23f1c40f"/><stop offset="100%" stop-color="%23b9770e"/></linearGradient></defs><rect x="1" y="4" width="14" height="10" fill="url(%23cg)" rx="1"/><path d="M1 8h14v2H1z" fill="%23111"/><rect x="6" y="7" width="4" height="4" fill="%23bdc3c7" rx="1"/><circle cx="8" cy="9" r="1" fill="%23111"/></svg>';
+        sprites.chestBlue.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><linearGradient id="cb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%2300f2fe"/><stop offset="100%" stop-color="%232874a6"/></linearGradient></defs><rect x="1" y="4" width="14" height="10" fill="url(%23cb)" rx="1"/><path d="M1 8h14v2H1z" fill="%23111"/><rect x="6" y="7" width="4" height="4" fill="%23f1c40f" rx="1"/><circle cx="8" cy="9" r="1" fill="%23111"/></svg>';
+        sprites.chestSilver.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><linearGradient id="cs" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23ecf0f1"/><stop offset="100%" stop-color="%237f8c8d"/></linearGradient></defs><rect x="1" y="4" width="14" height="10" fill="url(%23cs)" rx="1"/><path d="M1 8h14v2H1z" fill="%23111"/><rect x="6" y="7" width="4" height="4" fill="%23f1c40f" rx="1"/><circle cx="8" cy="9" r="1" fill="%23111"/></svg>';
+        sprites.chestOpen.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1" y="7" width="14" height="7" fill="%237e5109"/><rect x="2" y="8" width="12" height="5" fill="%23111"/><rect x="0" y="2" width="16" height="5" fill="%23b9770e"/></svg>';
+        
+        sprites.keyDoor.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%232c3e50"/><rect x="2" y="2" width="12" height="14" fill="%231a252f"/><circle cx="8" cy="7" r="2.5" fill="%23f1c40f"/><rect x="7.5" y="7" width="1" height="4" fill="%23f1c40f"/></svg>';
+        sprites.sign.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="7" y="8" width="2" height="8" fill="%234a2c11"/><rect x="1" y="2" width="14" height="8" fill="%238d5524" rx="1"/><line x1="3" y1="4" x2="13" y2="4" stroke="%233e2723" stroke-width="1"/><line x1="3" y1="7" x2="11" y2="7" stroke="%233e2723" stroke-width="1"/></svg>';
+        sprites.shrine.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1" y="6" width="14" height="9" fill="%237f8c8d"/><polygon points="8,0 13,5 3,5" fill="%23f1c40f"/><polygon points="8,1 11,4 5,4" fill="%2300f2fe"/></svg>';
+        sprites.altar.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1" y="6" width="14" height="9" fill="%237f8c8d"/><polygon points="8,0 13,5 3,5" fill="%23f1c40f"/><polygon points="8,1 11,4 5,4" fill="%2300f2fe"/></svg>';
+        sprites.barrier.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%236c3483" opacity="0.6"/><animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite"/><line x1="0" y1="0" x2="16" y2="16" stroke="%23a569bd" stroke-width="2"/></svg>';
+        sprites.heart.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 15 C -4 8, 3 -2, 8 4 C 13 -2, 20 8, 8 15" fill="%23e74c3c"/></svg>';
+        sprites.shard.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><polygon points="8,0 14,8 8,16 2,8" fill="%2300f2fe"/><polygon points="8,2 12,8 8,14 4,8" fill="%23f1c40f"/></svg>';
+        sprites.shield.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0 L15 3 V8 C15 12.5 8 16 8 16 C8 16 1 12.5 1 8 V3 Z" fill="%23f1c40f"/><rect x="6" y="6" width="4" height="4" fill="%23f1c40f"/></svg>';
+        sprites.aegisShield.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0 L15 3 V8 C15 12.5 8 16 8 16 C8 16 1 12.5 1 8 V3 Z" fill="%23bdc3c7"/><path d="M8 2 L13 4.5 V8 C13 11.5 8 14.5 8 14.5 C8 14.5 3 11.5 3 8 V4.5 Z" fill="%232980b9"/><circle cx="8" cy="8" r="2" fill="%23f1c40f"/></svg>';
+        sprites.bomb.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="9" r="6.5" fill="%231b2631"/><rect x="7" y="1.5" width="2" height="3" fill="%23d35400"/></svg>';
+        sprites.bombPickup.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="9" r="5" fill="%231b2631"/><rect x="7.5" y="2" width="1" height="2" fill="%23d35400"/></svg>';
+        sprites.explosion.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="%23e63946"/><circle cx="8" cy="8" r="4" fill="%23f1c40f"/></svg>';
+        sprites.masterSword.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="7" y="0" width="2" height="11" fill="%2300f2fe"/><rect x="4" y="11" width="8" height="2" fill="%23f1c40f"/></svg>';
+        sprites.entrance.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%2317202a"/><path d="M 2 16 L 2 6 A 6 6 0 0 1 14 6 L 14 16 Z" fill="%23000"/><path d="M 3 16 L 3 7 A 5 5 0 0 1 13 7 L 13 16 Z" fill="%23111"/><circle cx="8" cy="8" r="2" fill="%23d4af37" opacity="0.5"/></svg>';
+        sprites.warpPad.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%2322160e"/><circle cx="8" cy="8" r="7" fill="%2317202a"/><circle cx="8" cy="8" r="6" fill="none" stroke="%2300f2fe" stroke-width="1" stroke-dasharray="3,1"/><polygon points="8,2 10,7 15,8 10,9 8,14 6,9 1,8 6,7" fill="%2300f2fe" opacity="0.6"/><circle cx="8" cy="8" r="2" fill="%23fff"/></svg>';
+
+        // --- Core State Machine ---
+        let gameState = 'intro'; 
+        let currentZone = 'overworld'; 
+        let currentRoom = { x: 0, y: 0 };
+        let isPaused = false;
+        
+        let introTick = 0;
+        let achievements = { firstBlood: false, shard1: false, shard2: false, shard3: false, masterSword: false };
+        let achTimer = 0, achText = "";
+
+        let player = {
+            x: 7 * TILE_SIZE, y: 7 * TILE_SIZE, dir: 'down',
+            hp: 6, maxHp: 6, rupees: 0, speed: 1.4, vx: 0, vy: 0,
+            attacking: false, attackTimer: 0, invulnerable: 0,
+            swordReach: 24, swordDamage: 2, isShielding: false,
+            hasMasterSword: false, hasAegisShield: false,
+            bombs: 5, maxBombs: 5, shards: 0, keys: 0,
+            isGodMode: false
+        };
+
+        let visitedRooms = new Set(["overworld_0,0"]);
+        const inputKeys = {};
+
+        // --- Multi-Room World Map Database ---
+        const generateBorderMap = (doors) => {
+            let map = [];
+            for (let r=0; r<ROWS; r++) {
+                let row = [];
+                for (let c=0; c<COLS; c++) {
+                    if (r===0||r===ROWS-1||c===0||c===COLS-1) row.push(1); else row.push(0);
+                }
+                map.push(row);
+            }
+            if(doors.includes('n')) { map[0][7]=0; map[0][8]=0; }
+            if(doors.includes('s')) { map[ROWS-1][7]=0; map[ROWS-1][8]=0; }
+            if(doors.includes('e')) { map[6][COLS-1]=0; map[7][COLS-1]=0; }
+            if(doors.includes('w')) { map[6][0]=0; map[7][0]=0; }
+            return map;
+        };
+
+        const world = {
+            "overworld": {
+                "0,0": { name: "Central Plains", map: generateBorderMap(['e','s']), enemies: [{x:300,y:200,dir:'down',hp:2,maxHp:2,speed:1,timer:0,type:'goblin'}], signs: { "3,3": "ASTRAEA'S REALM: Find the 3 Shards in the surrounding mini-dungeons." } },
+                "1,0": { name: "Eastern Lake", map: generateBorderMap(['w','s']), enemies: [{x:200,y:200,dir:'down',hp:2,maxHp:2,speed:1,timer:0,type:'goblin'}, {x:350,y:100,dir:'up',hp:2,maxHp:2,speed:1.5,timer:0,type:'bat'}] },
+                "0,1": { name: "Western Woods", map: generateBorderMap(['n','e']), enemies: [{x:100,y:100,dir:'down',hp:2,maxHp:2,speed:1,timer:0,type:'slime'}, {x:250,y:300,dir:'left',hp:2,maxHp:2,speed:1.5,timer:0,type:'bat'}] },
+                "1,1": { name: "Celestial Altar Exterior", map: generateBorderMap(['n','w']), enemies: [{x:200,y:250,dir:'up',hp:8,maxHp:8,speed:0.6,timer:0,type:'knight'}] }
+            },
+            "d1": {
+                "0,0": { name: "Forest Temple Ent.", map: generateBorderMap(['n']), enemies: [{x:150,y:150,dir:'down',hp:2,maxHp:2,speed:1,timer:0,type:'slime'}, {x:300,y:200,dir:'up',hp:2,maxHp:2,speed:1,timer:0,type:'slime'}] },
+                "0,-1": { name: "Forest Gauntlet", map: generateBorderMap(['n','s']), enemies: [{x:150,y:150,dir:'right',hp:2,maxHp:2,speed:1.5,timer:0,type:'bat'}, {x:350,y:250,dir:'left',hp:2,maxHp:2,speed:1,timer:0,type:'wizard',shootTimer:0}] },
+                "0,-2": { name: "Forest Guard (Mini-Boss)", map: generateBorderMap(['n','s']), enemies: [{x:250,y:200,dir:'down',hp:12,maxHp:12,speed:1,timer:0,type:'stalfos',shootTimer:0,dropsChest:9}] },
+                "0,-3": { name: "Forest Shrine (Boss)", map: generateBorderMap(['s']), enemies: [{x:250,y:150,dir:'down',hp:24,maxHp:24,speed:1,timer:0,type:'boss',shootTimer:0,dropsChest:21}] }
+            },
+            "d2": {
+                "0,0": { name: "Ice Cavern Ent.", map: generateBorderMap(['e']), enemies: [{x:300,y:100,dir:'down',hp:2,maxHp:2,speed:1.5,timer:0,type:'bat'}] },
+                "1,0": { name: "Slippery Trap", map: generateBorderMap(['w','e']), enemies: [{x:150,y:150,dir:'down',hp:2,maxHp:2,speed:1,timer:0,type:'slime'}, {x:300,y:300,dir:'up',hp:2,maxHp:2,speed:1,timer:0,type:'slime'}] },
+                "2,0": { name: "Frozen Guard (Mini-Boss)", map: generateBorderMap(['w','n']), enemies: [{x:250,y:200,dir:'down',hp:12,maxHp:12,speed:1,timer:0,type:'stalfos',shootTimer:0,dropsChest:9}] },
+                "2,-1": { name: "Ice Cavern Shrine (Boss)", map: generateBorderMap(['s']), enemies: [{x:250,y:200,dir:'down',hp:24,maxHp:24,speed:1,timer:0,type:'boss',shootTimer:0,dropsChest:21}] }
+            },
+            "d3": {
+                "0,0": { name: "Fire Pit Ent.", map: generateBorderMap(['n']), enemies: [{x:150,y:150,dir:'down',hp:8,maxHp:8,speed:0.6,timer:0,type:'knight'}] },
+                "0,-1": { name: "Magma Fork", map: generateBorderMap(['s','e']), enemies: [{x:150,y:150,dir:'right',hp:2,maxHp:2,speed:1,timer:0,type:'wizard',shootTimer:0}, {x:350,y:300,dir:'left',hp:2,maxHp:2,speed:1,timer:0,type:'wizard',shootTimer:0}] },
+                "1,-1": { name: "Flame Guard (Mini-Boss)", map: generateBorderMap(['w','n']), enemies: [{x:250,y:200,dir:'down',hp:12,maxHp:12,speed:1,timer:0,type:'stalfos',shootTimer:0,dropsChest:9}] },
+                "1,-2": { name: "Fire Pit Shrine (Boss)", map: generateBorderMap(['s']), enemies: [{x:250,y:150,dir:'down',hp:24,maxHp:24,speed:1,timer:0,type:'boss',shootTimer:0,dropsChest:21}] }
+            },
+            "d4": {
+                "0,0": { name: "Altar Approach", map: generateBorderMap(['n']), enemies: [{x:200,y:200,dir:'down',hp:8,maxHp:8,speed:0.6,timer:0,type:'knight'}, {x:300,y:200,dir:'down',hp:8,maxHp:8,speed:0.6,timer:0,type:'knight'}] },
+                "0,-1": { name: "Celestial Guardian (Mini)", map: generateBorderMap(['s', 'n']), enemies: [{x:250,y:200,dir:'down',hp:12,maxHp:12,speed:1,timer:0,type:'stalfos',shootTimer:0,dropsChest:22}] }, 
+                "0,-2": { name: "The Abyss (Boss)", map: generateBorderMap(['s', 'n']), enemies: [{x:250,y:150,dir:'down',hp:40,maxHp:40,speed:1.2,timer:0,type:'boss',shootTimer:0}] },
+                "0,-3": { name: "The Celestial Altar", map: generateBorderMap(['s']), enemies: [] }
+            }
+        };
+
+        // Inject specifics into maps
+        world.overworld["0,0"].map[3][3] = 4; // Sign
+        world.overworld["0,0"].map[2][14] = 13; // Door to D1
+        world.overworld["1,0"].map[2][13] = 14; // Door to D2 (Fixed on land above lake)
+        for(let i=5;i<12;i++) for(let j=2;j<11;j++) world.overworld["1,0"].map[i][j] = 12; // Water Lake
+        world.overworld["0,1"].map[10][3] = 15; // Door to D3
+        
+        // Progress Locks
+        world.overworld["1,0"].map[13][7] = 5; world.overworld["1,0"].map[13][8] = 5; // Barrier South
+        world.overworld["0,1"].map[6][15] = 5; world.overworld["0,1"].map[7][15] = 5; // Barrier East
+        world.overworld["1,1"].map[3][7] = 16; world.overworld["1,1"].map[3][8] = 16; // Door to D4
+
+        // D1 specific
+        world.d1["0,0"].map[13][7] = 17; world.d1["0,0"].map[13][8] = 17;
+        world.d1["0,-2"].map[0][7] = 11; world.d1["0,-2"].map[0][8] = 11; // Locked boss double-door
+        for(let i=2; i<12; i++) { world.d1["0,-1"].map[i][2] = 19; world.d1["0,-1"].map[i][13] = 19; } // Spikes
+
+        // D2 specific
+        world.d2["0,0"].map[7][0] = 17; world.d2["0,0"].map[8][0] = 17; 
+        for(let i=3;i<11;i++) for(let j=3;j<13;j++) world.d2["1,0"].map[i][j] = 8; // Ice floor
+        world.d2["2,0"].map[0][7] = 11; world.d2["2,0"].map[0][8] = 11; // Locked boss double-door
+
+        // D3 specific
+        world.d3["0,0"].map[13][7] = 17; world.d3["0,0"].map[13][8] = 17; 
+        for(let j=3;j<13;j++) { world.d3["0,-1"].map[3][j] = 20; world.d3["0,-1"].map[10][j] = 20; } // Pits
+        world.d3["1,-1"].map[0][7] = 11; world.d3["1,-1"].map[0][8] = 11; // Locked boss double-door
+        world.d3["0,0"].map[2][2] = 6; // Bombable wall
+        world.d3["0,0"].map[1][2] = 7; // Astraea Sword hidden behind wall
+
+        // D4 specific
+        world.d4["0,0"].map[13][7] = 17; world.d4["0,0"].map[13][8] = 17; 
+        world.d4["0,-2"].map[0][7] = 5; world.d4["0,-2"].map[0][8] = 5; // Block to Altar Room
+        world.d4["0,-3"].map[6][7] = 2; // Altar tile
+        world.d4["0,-3"].map[6][8] = 2; // Altar tile
+
+        let items = []; let projectiles = []; let activeBombs = []; let activeExplosions = []; let swordBeams = [];
+
+        // --- Keyboard Handling ---
+        document.addEventListener("keydown", e => {
+            const code = e.code; const k = e.key.toLowerCase();
+            if (code === "Space" || k.startsWith("arrow")) e.preventDefault();
+
+            let mappedKey = null;
+            if (k === 'w' || k === 'arrowup') mappedKey = 'w';
+            if (k === 's' || k === 'arrowdown') mappedKey = 's';
+            if (k === 'a' || k === 'arrowleft') mappedKey = 'a';
+            if (k === 'd' || k === 'arrowright') mappedKey = 'd';
+            if (k === 'e' || code === 'Space' || k === ' ') mappedKey = 'e';
+            if (k === 'q') mappedKey = 'q';
+            if (k === 'c') mappedKey = 'c';
+
+            if (mappedKey) {
+                inputKeys[mappedKey] = true;
+                if (gameState === 'intro' && mappedKey === 'e') { 
+                    stopIntroMusic(); gameState = 'playing'; 
+                    document.getElementById("welcomeModal").style.display = "flex"; isPaused = true;
+                } else if (gameState === 'playing') {
+                    if (mappedKey === "e") triggerAction();
+                    if (mappedKey === "q") plantBomb();
+                    if (mappedKey === "c") toggleCheatMenu();
+                }
+            }
+        });
+
+        document.addEventListener("keyup", e => { 
+            const code = e.code; const k = e.key.toLowerCase();
+            let mappedKey = null;
+            if (k === 'w' || k === 'arrowup') mappedKey = 'w';
+            if (k === 's' || k === 'arrowdown') mappedKey = 's';
+            if (k === 'a' || k === 'arrowleft') mappedKey = 'a';
+            if (k === 'd' || k === 'arrowright') mappedKey = 'd';
+            if (k === 'e' || code === 'Space' || k === ' ') mappedKey = 'e';
+            if (k === 'q') mappedKey = 'q';
+            if (k === 'c') mappedKey = 'c';
+            if (mappedKey) inputKeys[mappedKey] = false; 
+        });
+
+        document.getElementById("btnAttack").addEventListener("click", () => {
+            if(gameState === 'intro') { stopIntroMusic(); gameState = 'playing'; document.getElementById("welcomeModal").style.display = "flex"; isPaused = true; } 
+            else triggerAction();
+        });
+        document.getElementById("btnBomb").addEventListener("click", () => { if(gameState==='playing') plantBomb(); });
+
+        function triggerAchievement(id, text) {
+            if (!achievements[id]) {
+                achievements[id] = true; playSound('shard');
+                achText = "🏆 " + text; achTimer = 180;
+                document.getElementById('achievementToast').innerText = achText;
+                document.getElementById('achievementToast').style.display = 'block';
+            }
+        }
+
+        function isVisible(id) { const el = document.getElementById(id); return el.style.display === "block" || el.style.display === "flex"; }
+        function closeWelcomeModal() { document.getElementById("welcomeModal").style.display = "none"; isPaused = false; initAudio(); }
+        function closeSign() { document.getElementById("signModal").style.display = "none"; isPaused = false; }
+        
+        function triggerUpgradePopup(title, desc) {
+            isPaused = true; playSound('chest');
+            document.getElementById("upgradeTitle").innerText = title;
+            document.getElementById("upgradeDesc").innerHTML = desc;
+            document.getElementById("upgradeModal").style.display = "flex";
+        }
+        function closeUpgradeModal() { document.getElementById("upgradeModal").style.display = "none"; isPaused = false; }
+
+        function openCheatModal() { isPaused = true; document.getElementById("cheatModal").style.display = "flex"; }
+        function closeCheatModal() { document.getElementById("cheatModal").style.display = "none"; isPaused = false; }
+        function toggleCheatMenu() { if(isVisible("cheatModal")) closeCheatModal(); else openCheatModal(); }
+
+        function toggleGodMode() { player.isGodMode = !player.isGodMode; alert("God Mode: " + (player.isGodMode ? "ENABLED" : "DISABLED")); }
+        function giveInfBombsKeys() { player.bombs = 99; player.keys = 99; updateHUD(); alert("Refilled 99 Bombs & Keys!"); }
+        function giveAllShards() { 
+            player.shards = 3; 
+            world.overworld["1,0"].map[13][7] = 0; world.overworld["1,0"].map[13][8] = 0; 
+            world.overworld["0,1"].map[6][15] = 0; world.overworld["0,1"].map[7][15] = 0; 
+            updateHUD(); alert("3 Shards given. Barriers to Altar lowered."); 
+        }
+        function warpToBoss() { warpTo('d4', 0, -2, 7*32, 10*32); closeCheatModal(); }
+
+        function warpTo(zone, rx, ry, px, py) {
+            playSound('warp'); currentZone = zone; currentRoom = { x: rx, y: ry };
+            player.x = px; player.y = py;
+            items = []; projectiles = []; swordBeams = []; activeBombs = []; activeExplosions = [];
+            visitedRooms.add(`${zone}_${rx},${ry}`); updateHUD();
+        }
+
+        function plantBomb() {
+            if (isPaused || activeBombs.length >= 2 || player.bombs <= 0) return;
+            player.bombs--; updateHUD(); activeBombs.push({ x: player.x, y: player.y, timer: 90 }); playSound('plant');
+        }
+
+        function triggerAction() {
+            if (isVisible("welcomeModal")) { closeWelcomeModal(); return; }
+            if (isVisible("signModal")) { closeSign(); return; }
+            if (isVisible("upgradeModal")) { closeUpgradeModal(); return; }
+            if (isVisible("cheatModal")) { closeCheatModal(); return; }
+
+            if (!player.attacking && !isPaused) {
+                player.attacking = true; player.attackTimer = 12; playSound('swing');
+
+                if (player.hasMasterSword) {
+                    let beamDx = 0, beamDy = 0;
+                    if (player.dir === 'up') beamDy = -5; if (player.dir === 'down') beamDy = 5;
+                    if (player.dir === 'left') beamDx = -5; if (player.dir === 'right') beamDx = 5;
+                    swordBeams.push({ x: player.x + 8, y: player.y + 8, dx: beamDx, dy: beamDy, dist: 0, maxDist: 160 });
+                }
+                checkInteractions();
+            }
+        }
+
+        function checkInteractions() {
+            const roomData = world[currentZone][`${currentRoom.x},${currentRoom.y}`];
+            if(!roomData) return;
+            const map = roomData.map;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const tile = map[r][c];
+                    const tx = c * TILE_SIZE, ty = r * TILE_SIZE;
+                    const dist = Math.hypot(player.x - tx, player.y - ty);
+
+                    if (dist < 44) {
+                        if (tile === 4) {
+                            isPaused = true; playSound('blip');
+                            let text = (roomData.signs && roomData.signs[`${c},${r}`]) ? roomData.signs[`${c},${r}`] : "An ancient cryptic message...";
+                            document.getElementById("signText").innerText = text; document.getElementById("signModal").style.display = "block";
+                        } else if (tile === 9 || tile === 21 || tile === 22) { 
+                            map[r][c] = 10;
+                            if (tile === 9) {
+                                player.keys++; updateHUD();
+                                triggerUpgradePopup("🔑 SMALL KEY FOUND!", "You opened the gold chest and retrieved a Small Key! Use it to unlock Boss Doors.");
+                            } else if (tile === 21) {
+                                player.shards++; updateHUD();
+                                if(player.shards===1) triggerAchievement('shard1', 'First Shard Obtained!');
+                                triggerUpgradePopup("🔷 CELESTIAL SHARD!", `You opened the crystal chest and obtained a shard! (${player.shards}/3)`);
+                                if(player.shards >= 3) {
+                                    world.overworld["1,0"].map[13][7] = 0; world.overworld["1,0"].map[13][8] = 0;
+                                    world.overworld["0,1"].map[6][15] = 0; world.overworld["0,1"].map[7][15] = 0;
+                                }
+                            } else if (tile === 22) {
+                                player.hasAegisShield = true; updateHUD();
+                                triggerUpgradePopup("🛡️ AEGIS SHIELD FOUND!", "You opened the silver chest and discovered the legendary Aegis Shield!<br><br>• Reflects magic pellets back at enemies!");
+                            }
+                        } else if (tile === 7) { 
+                            map[r][c] = 0; player.hasMasterSword = true; player.hp = player.maxHp;
+                            player.swordReach = 36; player.swordDamage = 4; updateHUD();
+                            triggerAchievement('masterSword', 'Found the Astraea Blade!');
+                            triggerUpgradePopup("⚔️ ASTRAEA: CELESTIAL BLADE! ⚔️", "The true weapon of light!<br>• Full Heal<br>• Sword Beams!");
+                        } else if (tile === 2) {
+                            triggerVictory();
+                        }
+                    }
+                }
+            }
+        }
+
+        function triggerVictory() {
+            isPaused = true; playSound('upgrade');
+            document.getElementById("creditsOverlay").style.display = "flex";
+            setTimeout(() => { document.getElementById("restartBtn").style.display = "block"; }, 20000);
+        }
+
+        function saveProgress() {
+            localStorage.setItem("astraea_save", JSON.stringify({ player, currentRoom, currentZone, visitedRooms: Array.from(visitedRooms), world, achievements }));
+            alert("Game Saved!");
+        }
+
+        function loadProgress() {
+            const data = localStorage.getItem("astraea_save");
+            if (data) {
+                const parsed = JSON.parse(data);
+                Object.assign(player, parsed.player); Object.assign(currentRoom, parsed.currentRoom);
+                currentZone = parsed.currentZone || 'overworld';
+                if (parsed.visitedRooms) visitedRooms = new Set(parsed.visitedRooms);
+                Object.assign(world, parsed.world); Object.assign(achievements, parsed.achievements || {});
+                updateHUD(); alert("Game Loaded!");
+            }
+        }
+
+        function resetGame() { localStorage.removeItem("astraea_save"); location.reload(); }
+
+        function updateHUD() {
+            let hearts = ""; let full = Math.floor(player.hp / 2); let half = (player.hp % 2 !== 0); let empty = Math.floor((player.maxHp - player.hp) / 2);
+            for (let i=0; i<full; i++) hearts += "❤️"; if (half) hearts += "💔"; for (let i=0; i<empty; i++) hearts += "🖤";
+
+            document.getElementById("hpDisplay").innerHTML = "HP: " + (hearts || "💀");
+            document.getElementById("rupeeDisplay").innerHTML = `💎 ${player.rupees} | 🔷 ${player.shards}/3 | 🔑 ${player.keys} | 💣 ${player.bombs}`;
+            document.getElementById("roomDisplay").innerHTML = "ZONE: " + world[currentZone][`${currentRoom.x},${currentRoom.y}`].name;
+            document.getElementById("eqSword").innerText = `🗡️ ${player.hasMasterSword ? "Astraea Blade" : "Wood Sword"}`;
+            document.getElementById("eqShield").innerText = `🛡️ ${player.hasAegisShield ? "Aegis Shield" : "Wood Shield"}`;
+        }
+
+        function canMoveTo(x, y) {
+            const map = world[currentZone][`${currentRoom.x},${currentRoom.y}`].map;
+            const pts = [{x:x+3,y:y+3}, {x:x+29,y:y+3}, {x:x+3,y:y+29}, {x:x+29,y:y+29}];
+            for (let p of pts) {
+                let c = Math.floor(p.x / TILE_SIZE), r = Math.floor(p.y / TILE_SIZE);
+                if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                    let t = map[r][c];
+
+                    if (t === 11) {
+                        if (player.keys > 0) { 
+                            map[r][c] = 0;
+                            // Multi-door check (Open adjacent 11s)
+                            if (c > 0 && map[r][c-1] === 11) map[r][c-1] = 0;
+                            if (c < COLS-1 && map[r][c+1] === 11) map[r][c+1] = 0;
+                            if (r > 0 && map[r-1][c] === 11) map[r-1][c] = 0;
+                            if (r < ROWS-1 && map[r+1][c] === 11) map[r+1][c] = 0;
+
+                            player.keys--; updateHUD(); playSound('gem'); return true; 
+                        }
+                        return false;
+                    }
+
+                    if (t===13) { warpTo('d1', 0, 0, 7*32, 11*32); return false; }
+                    if (t===14) { warpTo('d2', 0, 0, 2*32, 7*32); return false; }
+                    if (t===15) { warpTo('d3', 0, 0, 7*32, 11*32); return false; }
+                    if (t===16) { warpTo('d4', 0, 0, 7*32, 11*32); return false; }
+                    if (t===17) {
+                        // Warp Out exactly on Overworld door
+                        if(currentZone==='d1') warpTo('overworld', 0, 0, 14*32, 3*32);
+                        if(currentZone==='d2') warpTo('overworld', 1, 0, 13*32, 3*32);
+                        if(currentZone==='d3') warpTo('overworld', 0, 1, 3*32, 11*32);
+                        if(currentZone==='d4') warpTo('overworld', 1, 1, 7*32, 4*32);
+                        return false; 
+                    }
+                    
+                    // The explicit, bulletproof collision check
+                    const solidTiles = [1, 2, 3, 5, 6, 12, 20];
+                    if (solidTiles.includes(t)) return false;
+                }
+            }
+            return true;
+        }
+
+        function checkCollision(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+
+        function drawIntro() {
+            ctx.fillStyle = "#050505"; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = "#f1c40f"; ctx.textAlign = "center";
+            
+            let alpha = Math.min(1, introTick / 100);
+            ctx.globalAlpha = alpha;
+            
+            ctx.font = "bold 32px Courier New"; ctx.fillText("ASTRAEA: CELESTIAL", canvas.width/2, 100);
+            ctx.font = "16px Courier New"; ctx.fillText("By ZMAJZLA", canvas.width/2, 130);
+            
+            if (introTick > 250) {
+                let scrollY = canvas.height - ((introTick - 250) * 0.5);
+                if (scrollY < 180) scrollY = 180; 
+                
+                ctx.fillStyle = "#fff"; ctx.font = "14px Courier New";
+                ctx.fillText("Long ago, the Celestial Altar was shattered...", canvas.width/2, scrollY);
+                ctx.fillText("Three sacred shards were scattered across the realm.", canvas.width/2, scrollY + 30);
+                ctx.fillText("Now, darkness creeps into the overworld.", canvas.width/2, scrollY + 60);
+                ctx.fillText("A hero awakens to reclaim the light.", canvas.width/2, scrollY + 90);
+            }
+
+            if (introTick > 150) {
+                ctx.globalAlpha = 0.5 + Math.sin(introTick * 0.05) * 0.5;
+                ctx.fillStyle = "#e63946"; ctx.fillText("PRESS [E] TO BEGIN", canvas.width/2, canvas.height - 30);
+            }
+            ctx.globalAlpha = 1.0; ctx.textAlign = "left"; 
+        }
+
+        function update() {
+            if (gameState === 'intro') {
+                introTick++;
+                if (introTick === 10) playIntroMusic();
+                if (introTick > 1000) { 
+                    stopIntroMusic(); gameState = 'playing'; 
+                    document.getElementById("welcomeModal").style.display = "flex"; isPaused = true;
+                }
+                return;
+            }
+
+            if (isPaused) return;
+
+            if (achTimer > 0) {
+                achTimer--;
+                if (achTimer <= 0) document.getElementById('achievementToast').style.display = 'none';
+            }
+
+            if (player.hp <= 0) { document.getElementById("gameOverOverlay").style.display = "flex"; return; }
+
+            let inputDx = 0, inputDy = 0;
+            if (inputKeys['w']) { inputDy -= 1; player.dir = 'up'; }
+            if (inputKeys['s']) { inputDy += 1; player.dir = 'down'; }
+            if (inputKeys['a']) { inputDx -= 1; player.dir = 'left'; }
+            if (inputKeys['d']) { inputDx += 1; player.dir = 'right'; }
+
+            player.isShielding = (inputDx === 0 && inputDy === 0 && !player.attacking);
+
+            let col = Math.floor((player.x + 16) / TILE_SIZE);
+            let row = Math.floor((player.y + 16) / TILE_SIZE);
+            const currentRoomData = world[currentZone][`${currentRoom.x},${currentRoom.y}`];
+            const isOnIce = currentRoomData && currentRoomData.map[row] && currentRoomData.map[row][col] === 8;
+            const isOnSpikes = currentRoomData && currentRoomData.map[row] && currentRoomData.map[row][col] === 19;
+
+            // Spikes Damage
+            if (isOnSpikes && player.invulnerable === 0 && !player.isGodMode) {
+                player.hp = Math.max(0, player.hp - 1); player.invulnerable = 45; playSound('hit'); updateHUD();
+            }
+
+            if (isOnIce) {
+                if (inputDx !== 0) player.vx = inputDx * player.speed;
+                if (inputDy !== 0) player.vy = inputDy * player.speed;
+                player.vx *= 0.96; player.vy *= 0.96;
+            } else {
+                player.vx = inputDx * player.speed; player.vy = inputDy * player.speed;
+            }
+
+            if (player.vx !== 0 && canMoveTo(player.x + player.vx, player.y)) player.x += player.vx;
+            if (player.vy !== 0 && canMoveTo(player.x, player.y + player.vy)) player.y += player.vy;
+
+            // Edge Transitions
+            if (player.x < 0) {
+                if (world[currentZone][`${currentRoom.x - 1},${currentRoom.y}`]) {
+                    currentRoom.x--; player.x = (COLS - 2) * TILE_SIZE; items=[]; projectiles=[]; swordBeams=[]; 
+                    visitedRooms.add(`${currentZone}_${currentRoom.x},${currentRoom.y}`); updateHUD();
+                } else player.x = 0;
+            } else if (player.x > (COLS - 1) * TILE_SIZE) {
+                if (world[currentZone][`${currentRoom.x + 1},${currentRoom.y}`]) {
+                    currentRoom.x++; player.x = TILE_SIZE; items=[]; projectiles=[]; swordBeams=[]; 
+                    visitedRooms.add(`${currentZone}_${currentRoom.x},${currentRoom.y}`); updateHUD();
+                } else player.x = (COLS - 1) * TILE_SIZE;
+            }
+            if (player.y < 0) {
+                if (world[currentZone][`${currentRoom.x},${currentRoom.y - 1}`]) {
+                    currentRoom.y--; player.y = (ROWS - 2) * TILE_SIZE; items=[]; projectiles=[]; swordBeams=[]; 
+                    visitedRooms.add(`${currentZone}_${currentRoom.x},${currentRoom.y}`); updateHUD();
+                } else player.y = 0;
+            } else if (player.y > (ROWS - 1) * TILE_SIZE) {
+                if (world[currentZone][`${currentRoom.x},${currentRoom.y + 1}`]) {
+                    currentRoom.y++; player.y = TILE_SIZE; items=[]; projectiles=[]; swordBeams=[]; 
+                    visitedRooms.add(`${currentZone}_${currentRoom.x},${currentRoom.y}`); updateHUD();
+                } else player.y = (ROWS - 1) * TILE_SIZE;
+            }
+
+            if (player.attacking && player.attackTimer-- <= 0) player.attacking = false;
+            if (player.invulnerable > 0) player.invulnerable--;
+
+            // Bombs
+            activeBombs.forEach((b, i) => {
+                b.timer--;
+                if (b.timer <= 0) {
+                    playSound('bomb'); activeExplosions.push({ x: b.x, y: b.y, timer: 20 }); activeBombs.splice(i, 1);
+                    const map = currentRoomData.map;
+                    const bx = Math.floor(b.x / TILE_SIZE), by = Math.floor(b.y / TILE_SIZE);
+
+                    for (let r = by - 1; r <= by + 1; r++) {
+                        for (let c = bx - 1; c <= bx + 1; c++) {
+                            if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                                if (map[r][c] === 6) map[r][c] = 0;
+                                if (map[r][c] === 3) {
+                                    map[r][c] = 0;
+                                    items.push({ x: c * TILE_SIZE, y: r * TILE_SIZE, type: Math.random() < 0.5 ? 'hp' : 'bomb' });
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            activeExplosions.forEach((e, i) => { e.timer--; if (e.timer <= 0) activeExplosions.splice(i, 1); });
+
+            // Sword Beams
+            swordBeams.forEach((beam, i) => {
+                beam.x += beam.dx; beam.y += beam.dy; beam.dist += Math.abs(beam.dx + beam.dy);
+                if (beam.dist > beam.maxDist) { swordBeams.splice(i, 1); return; }
+                if (currentRoomData) {
+                    currentRoomData.enemies.forEach((en, eIdx) => {
+                        if (checkCollision({x:beam.x,y:beam.y,w:16,h:16}, {x:en.x,y:en.y,w:32,h:32})) {
+                            en.hp -= 2; playSound('hit');
+                            if (en.hp <= 0) {
+                                triggerAchievement('firstBlood', 'First Blood!');
+                                currentRoomData.enemies.splice(eIdx, 1);
+                                if (en.dropsChest) { currentRoomData.map[7][7] = en.dropsChest; playSound('chest'); }
+                                if (en.type==='boss') {
+                                    if(currentZone === 'd4') {
+                                        currentRoomData.map[0][7] = 0; currentRoomData.map[0][8] = 0; playSound('upgrade');
+                                    } else {
+                                        currentRoomData.map[5][7] = 17; currentRoomData.map[5][8] = 17; 
+                                    }
+                                }
+                            }
+                            swordBeams.splice(i, 1);
+                        }
+                    });
+                }
+            });
+
+            // Melee Box
+            let swordBox = null;
+            if (player.attacking) {
+                const r = player.swordReach;
+                if (player.dir === 'up') swordBox = { x: player.x - 8, y: player.y - r, w: 48, h: r };
+                if (player.dir === 'down') swordBox = { x: player.x - 8, y: player.y + 32, w: 48, h: r };
+                if (player.dir === 'left') swordBox = { x: player.x - r, y: player.y - 8, w: r, h: 48 };
+                if (player.dir === 'right') swordBox = { x: player.x + 32, y: player.y - 8, w: r, h: 48 };
+
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        if (currentRoomData.map[r][c] === 3) {
+                            if (checkCollision(swordBox, {x: c*32, y: r*32, w: 32, h: 32})) {
+                                currentRoomData.map[r][c] = 0; playSound('hit');
+                                items.push({ x: c * 32, y: r * 32, type: Math.random() < 0.5 ? 'hp' : 'bomb' });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Enemies Update & AI
+            if (currentRoomData) {
+                for(let i=currentRoomData.enemies.length-1; i>=0; i--) {
+                    let enemy = currentRoomData.enemies[i];
+                    
+                    if (enemy.type === 'bat') {
+                        if (enemy.timer++ > 15) {
+                            enemy.dir = ['up','down','left','right'][Math.floor(Math.random()*4)];
+                            enemy.timer=0;
+                        }
+                    } else if (enemy.type === 'knight') {
+                        let d = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                        if (d < 160) {
+                            if (Math.abs(player.x - enemy.x) > Math.abs(player.y - enemy.y)) {
+                                enemy.dir = player.x > enemy.x ? 'right' : 'left';
+                            } else {
+                                enemy.dir = player.y > enemy.y ? 'down' : 'up';
+                            }
+                        } else {
+                            enemy.dir = 'none';
+                        }
+                    } else {
+                        if (enemy.timer++ > 40) {
+                            enemy.dir = ['up','down','left','right'][Math.floor(Math.random()*4)];
+                            enemy.timer=0;
+                        }
+                    }
+
+                    let ex = enemy.x, ey = enemy.y;
+                    if (enemy.dir==='up') ey-=enemy.speed; if (enemy.dir==='down') ey+=enemy.speed;
+                    if (enemy.dir==='left') ex-=enemy.speed; if (enemy.dir==='right') ex+=enemy.speed;
+                    
+                    let colE = Math.floor((ex + 16) / TILE_SIZE); let rowE = Math.floor((ey + 16) / TILE_SIZE);
+                    let eTile = currentRoomData.map[rowE] ? currentRoomData.map[rowE][colE] : 1;
+                    
+                    if (ex>32 && ex<COLS*32-64 && ey>32 && ey<ROWS*32-64 && eTile !== 20 && eTile !== 12 && eTile !== 1) { enemy.x=ex; enemy.y=ey; }
+                    else if (enemy.type !== 'knight') { enemy.dir = ['up','down','left','right'][Math.floor(Math.random()*4)]; }
+
+                    if (enemy.type === 'wizard' || enemy.type === 'boss' || enemy.type === 'stalfos') {
+                        enemy.shootTimer = (enemy.shootTimer||0) + 1;
+                        const fireInterval = enemy.type === 'boss' ? 60 : (enemy.type==='stalfos'?90:120);
+                        if (enemy.shootTimer > fireInterval) {
+                            enemy.shootTimer = 0; let a = Math.atan2(player.y-enemy.y, player.x-enemy.x);
+                            projectiles.push({x:enemy.x+16,y:enemy.y+16,dx:Math.cos(a)*2.5,dy:Math.sin(a)*2.5,radius:5,ref:false});
+
+                            if (enemy.type === 'boss') {
+                                projectiles.push({x:enemy.x+16,y:enemy.y+16,dx:Math.cos(a+0.3)*2.5,dy:Math.sin(a+0.3)*2.5,radius:5,ref:false});
+                                projectiles.push({x:enemy.x+16,y:enemy.y+16,dx:Math.cos(a-0.3)*2.5,dy:Math.sin(a-0.3)*2.5,radius:5,ref:false});
+                            }
+                            playSound('shoot');
+                        }
+                    }
+
+                    // Sword Hits Enemy
+                    if (swordBox && checkCollision(swordBox, {x:enemy.x,y:enemy.y,w:32,h:32})) {
+                        enemy.hp -= player.swordDamage; playSound('hit');
+                        let a = Math.atan2(enemy.y-player.y, enemy.x-player.x);
+                        let nx = enemy.x + Math.cos(a)*16, ny = enemy.y + Math.sin(a)*16;
+                        if(canMoveTo(nx, ny)) { enemy.x = nx; enemy.y = ny; }
+
+                        if (enemy.hp <= 0) {
+                            items.push({x:enemy.x, y:enemy.y, type:Math.random()>0.5?'hp':'gem'});
+                            triggerAchievement('firstBlood', 'First Blood!');
+                            
+                            if (enemy.type === 'slime') {
+                                currentRoomData.enemies.push(
+                                    { x: enemy.x - 12, y: enemy.y, dir: 'left', hp: 1, maxHp: 1, speed: 1.1, timer: 0, type: 'mini_slime' },
+                                    { x: enemy.x + 12, y: enemy.y, dir: 'right', hp: 1, maxHp: 1, speed: 1.1, timer: 0, type: 'mini_slime' }
+                                );
+                            }
+
+                            if (enemy.dropsChest) {
+                                currentRoomData.map[7][7] = enemy.dropsChest; 
+                                playSound('chest');
+                            }
+
+                            currentRoomData.enemies.splice(i,1);
+                            
+                            if (enemy.type==='boss') {
+                                if (currentZone === 'd4') {
+                                    currentRoomData.map[0][7] = 0; currentRoomData.map[0][8] = 0; playSound('upgrade');
+                                } else {
+                                    currentRoomData.map[5][7] = 17; currentRoomData.map[5][8] = 17; // Spawn Boss Warp Pad
+                                }
+                            }
+                        }
+                    }
+
+                    // Contact Collision
+                    if (checkCollision({x:player.x,y:player.y,w:32,h:32}, {x:enemy.x,y:enemy.y,w:32,h:32})) {
+                        if (player.isShielding) {
+                            playSound('block');
+                            let kx = 0, ky = 0;
+                            if (player.dir==='up') ky=-1; else if(player.dir==='down') ky=1; else if(player.dir==='left') kx=-1; else if(player.dir==='right') kx=1;
+                            let nx = enemy.x + kx*32, ny = enemy.y + ky*32;
+                            if(canMoveTo(nx,ny)){ enemy.x=nx; enemy.y=ny; }
+                        }
+                        else if (player.invulnerable===0 && !player.isGodMode) {
+                            player.hp = Math.max(0, player.hp - (enemy.type==='boss'||enemy.type==='knight'?2:1));
+                            player.invulnerable = 45; playSound('hit'); updateHUD();
+                        }
+                    }
+                }
+            }
+
+            // Projectiles
+            for (let i = projectiles.length-1; i>=0; i--) {
+                let p = projectiles[i]; p.x += p.dx; p.y += p.dy;
+                let c = Math.floor(p.x/32), r = Math.floor(p.y/32);
+                if (r<0||r>=ROWS||c<0||c>=COLS||(currentRoomData.map[r] && [1, 2, 3, 5, 6, 11].includes(currentRoomData.map[r][c]))) { projectiles.splice(i,1); continue; }
+
+                if (checkCollision({x:player.x,y:player.y,w:32,h:32}, {x:p.x-p.radius,y:p.y-p.radius,w:p.radius*2,h:p.radius*2})) {
+                    if (player.isShielding) {
+                        playSound('block');
+                        if(player.hasAegisShield && !p.ref) { p.dx*=-1.5; p.dy*=-1.5; p.ref=true; }
+                        else if (!p.ref) projectiles.splice(i,1);
+                    } else if (player.invulnerable===0 && !player.isGodMode) {
+                        player.hp = Math.max(0, player.hp - 1); player.invulnerable = 45; playSound('hit'); updateHUD(); projectiles.splice(i,1);
+                    }
+                }
+                
+                if (p.ref && currentRoomData) {
+                    for(let j=currentRoomData.enemies.length-1; j>=0; j--) {
+                        let e = currentRoomData.enemies[j];
+                        if(checkCollision({x:e.x,y:e.y,w:32,h:32}, {x:p.x-p.radius,y:p.y-p.radius,w:p.radius*2,h:p.radius*2})) {
+                            e.hp -= 2; playSound('hit'); projectiles.splice(i,1);
+                            if(e.hp<=0) {
+                                if (e.dropsChest) { currentRoomData.map[7][7] = e.dropsChest; playSound('chest'); }
+                                currentRoomData.enemies.splice(j,1);
+                                if(e.type==='boss') {
+                                    if(currentZone === 'd4') {
+                                        currentRoomData.map[0][7] = 0; currentRoomData.map[0][8] = 0; playSound('upgrade');
+                                    } else {
+                                        currentRoomData.map[5][7] = 17; currentRoomData.map[5][8] = 17; 
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Items
+            for (let i=items.length-1; i>=0; i--) {
+                let itm = items[i];
+                if (checkCollision({x:player.x,y:player.y,w:32,h:32}, {x:itm.x,y:itm.y,w:32,h:32})) {
+                    if (itm.type==='hp') { player.hp = Math.min(player.maxHp, player.hp+2); playSound('gem'); }
+                    else if (itm.type==='bomb') { player.bombs = Math.min(player.maxBombs, player.bombs+2); playSound('gem'); }
+                    else { player.rupees++; playSound('gem'); }
+                    items.splice(i,1); updateHUD();
+                }
+            }
+        }
+
+        function drawImageSafely(img, x, y, w, h, fallback) {
+            if (img.complete && img.naturalWidth !== 0) ctx.drawImage(img, x, y, w, h);
+            else { ctx.fillStyle = fallback; ctx.fillRect(x, y, w, h); }
+        }
+
+        function drawMiniMap() {
+            mCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+            const boxW = 16, boxH = 12;
+
+            if (currentZone === 'overworld') {
+                const layout = [{x:0,y:0},{x:1,y:0},{x:0,y:1},{x:1,y:1}];
+                layout.forEach(l => {
+                    if (visitedRooms.has(`overworld_${l.x},${l.y}`)) {
+                        mCtx.fillStyle = (l.x === currentRoom.x && l.y === currentRoom.y) ? "#f1c40f" : "#7f8c8d";
+                        mCtx.fillRect(40 + l.x*18, 30 + l.y*14, boxW, boxH);
+                    }
+                });
+            } else {
+                const layout = [{x:0,y:0},{x:0,y:-1},{x:0,y:-2},{x:0,y:-3},{x:1,y:0},{x:2,y:0},{x:2,y:-1},{x:1,y:-1},{x:1,y:-2}]; 
+                layout.forEach(l => {
+                    if (visitedRooms.has(`${currentZone}_${l.x},${l.y}`)) {
+                        mCtx.fillStyle = (l.x === currentRoom.x && l.y === currentRoom.y) ? "#f1c40f" : "#7f8c8d";
+                        if ((currentZone==='d1'&&l.y===-3) || (currentZone==='d2'&&l.x===2&&l.y===-1) || (currentZone==='d3'&&l.x===1&&l.y===-2) || (currentZone==='d4'&&l.y===-2)) mCtx.fillStyle = "#e63946";
+                        mCtx.fillRect(50 + l.x*18, 50 + l.y*14, boxW, boxH);
+                    }
+                });
+            }
+        }
+
+        function draw() {
+            if (gameState === 'intro') { drawIntro(); return; }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const roomData = world[currentZone][`${currentRoom.x},${currentRoom.y}`];
+            if (!roomData) return;
+
+            // Apply Theme Overrides
+            let fSprite = sprites.floorOverworld; let wSprite = sprites.wallOverworld; let hSprite = sprites.water;
+            if (currentZone === 'd1') { fSprite = sprites.floorForest; wSprite = sprites.wallForest; }
+            if (currentZone === 'd2') { fSprite = sprites.floorIce; wSprite = sprites.wallIce; }
+            if (currentZone === 'd3') { fSprite = sprites.floorFire; wSprite = sprites.wallFire; hSprite = sprites.lava; }
+            if (currentZone === 'd4') { fSprite = sprites.floorAltar; wSprite = sprites.wallAltar; }
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const t = roomData.map[r][c]; const tx = c * 32, ty = r * 32;
+                    
+                    if(t === 8) drawImageSafely(sprites.iceFloor, tx, ty, 32, 32, "#5dade2");
+                    else if (t === 20) drawImageSafely(sprites.pit, tx, ty, 32, 32, "#111");
+                    else if (t === 12) drawImageSafely(hSprite, tx, ty, 32, 32, "#1f618d");
+                    else drawImageSafely(fSprite, tx, ty, 32, 32, "#2c1d11");
+
+                    if (t===1) drawImageSafely(wSprite, tx, ty, 32, 32, "#1b2631");
+                    else if (t===2) drawImageSafely(sprites.altar, tx, ty, 32, 32, "#bdc3c7");
+                    else if (t===3) drawImageSafely(sprites.box, tx, ty, 32, 32, "#e67e22");
+                    else if (t===4) drawImageSafely(sprites.sign, tx, ty, 32, 32, "#b9770e");
+                    else if (t===5) drawImageSafely(sprites.barrier, tx, ty, 32, 32, "#8e44ad");
+                    else if (t===6) drawImageSafely(sprites.crackWall, tx, ty, 32, 32, "#1b2631");
+                    else if (t===7) drawImageSafely(sprites.masterSword, tx, ty, 32, 32, "#00f2fe");
+                    else if (t===9) drawImageSafely(sprites.chestGold, tx, ty, 32, 32, "#b9770e");
+                    else if (t===10) drawImageSafely(sprites.chestOpen, tx, ty, 32, 32, "#7e5109");
+                    else if (t===11) drawImageSafely(sprites.keyDoor, tx, ty, 32, 32, "#34495e");
+                    else if (t>=13 && t<=16) drawImageSafely(sprites.entrance, tx, ty, 32, 32, "#000");
+                    else if (t===17) drawImageSafely(sprites.warpPad, tx, ty, 32, 32, "#f1c40f");
+                    else if (t===18) drawImageSafely(sprites.shard, tx, ty, 32, 32, "#00f2fe");
+                    else if (t===19) drawImageSafely(sprites.spikes, tx, ty, 32, 32, "#bdc3c7");
+                    else if (t===21) drawImageSafely(sprites.chestBlue, tx, ty, 32, 32, "#00f2fe");
+                    else if (t===22) drawImageSafely(sprites.chestSilver, tx, ty, 32, 32, "#bdc3c7");
+                }
+            }
+
+            items.forEach(i => drawImageSafely(i.type==='hp'?sprites.heart:(i.type==='bomb'?sprites.bombPickup:sprites.shard), i.x+4, i.y+4, 24, 24, "#e63946"));
+            activeBombs.forEach(b => drawImageSafely(sprites.bomb, b.x, b.y, 32, 32, "#111"));
+            activeExplosions.forEach(e => drawImageSafely(sprites.explosion, e.x-32, e.y-32, 96, 96, "#e63946"));
+
+            roomData.enemies.forEach(e => {
+                let s = sprites.enemy;
+                if(e.type==='wizard') s = sprites.wizard;
+                if(e.type==='boss') s = sprites.boss;
+                if(e.type==='stalfos') s = sprites.stalfos;
+                if(e.type==='bat') s = sprites.bat;
+                if(e.type==='knight') s = sprites.knight;
+                if(e.type.includes('slime')) s = sprites.slime;
+                
+                const size = e.type==='mini_slime' ? 22 : 32;
+                drawImageSafely(s, e.x, e.y, size, size, "#e63946");
+                ctx.fillStyle = "#000"; ctx.fillRect(e.x, e.y-6, 32, 4);
+                ctx.fillStyle = e.type==='boss'?"#e63946":"#0f0"; ctx.fillRect(e.x, e.y-6, (e.hp/e.maxHp)*32, 4);
+            });
+
+            projectiles.forEach(p => drawImageSafely(sprites.magicPellet, p.x-p.radius, p.y-p.radius, p.radius*2, p.radius*2, p.ref?"#f1c40f":"#00f2fe"));
+            swordBeams.forEach(sb => drawImageSafely(sprites.magicPellet, sb.x, sb.y, 16, 16, "#00f2fe"));
+
+            if (player.invulnerable % 4 < 2) {
+                let p = sprites.playerDown; if(player.dir==='up') p=sprites.playerUp; if(player.dir==='left') p=sprites.playerLeft; if(player.dir==='right') p=sprites.playerRight;
+                drawImageSafely(p, player.x, player.y, 32, 32, "#27ae60");
+
+                if (player.isShielding) {
+                    let sx=player.x, sy=player.y; if(player.dir==='down') sy+=12; if(player.dir==='up') sy-=10; if(player.dir==='left') sx-=10; if(player.dir==='right') sx+=12;
+                    drawImageSafely(player.hasAegisShield?sprites.aegisShield:sprites.shield, sx, sy, 18, 18, "#f1c40f");
+                }
+            }
+
+            if (player.attacking) {
+                let progress = 1 - (player.attackTimer / 12);
+                let cx = player.x + TILE_SIZE / 2, cy = player.y + TILE_SIZE / 2;
+                let startAngle, endAngle;
+                if (player.dir === 'up') { startAngle = Math.PI; endAngle = Math.PI * 2; }
+                if (player.dir === 'down') { startAngle = 0; endAngle = Math.PI; }
+                if (player.dir === 'left') { startAngle = Math.PI / 2; endAngle = Math.PI * 1.5; }
+                if (player.dir === 'right') { startAngle = -Math.PI / 2; endAngle = Math.PI / 2; }
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, player.swordReach, startAngle, startAngle + (endAngle - startAngle) * progress);
+                ctx.lineWidth = 10; ctx.lineCap = "round";
+                ctx.strokeStyle = player.hasMasterSword ? "rgba(0, 242, 254, 0.8)" : "rgba(255, 255, 255, 0.8)";
+                ctx.stroke();
+            }
+
+            drawMiniMap();
+        }
+
+        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+        updateHUD(); gameLoop();
+    </script>
+</body>
+</html>
